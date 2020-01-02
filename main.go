@@ -4,16 +4,16 @@ import (
 	// Standard Library
 	"crypto/sha256"
 	"encoding/hex"
-
-	// "encoding/json"
-	// "io"
-	// "log"
-	// "net/http"
-	// "os"
+	"encoding/json"
+	"io"
+	"log"
+	"net/http"
+	"os"
 	"time"
+
 	// Third party Libraries
+	"github.com/gorilla/mux"
 	// "github.com/davecgh/go-spew/spew"
-	// "github.com/gorilla/mux"
 	// "github.com/joho/godotenv"
 )
 
@@ -49,4 +49,61 @@ func generateBlock(oldBlock Block, BPM int) (Block, error) {
 	newBlock.PrevHash = oldBlock.Hash
 	newBlock.Hash = calculateBlockHash(newBlock)
 	return newBlock, nil
+}
+
+// Function to check if a new block is valid
+func isBlockValid(oldBlock Block, newBlock Block) bool {
+	if oldBlock.Index+1 != newBlock.Index {
+		return false
+	}
+	if oldBlock.Hash != newBlock.PrevHash {
+		return false
+	}
+	if calculateBlockHash(newBlock) != newBlock.Hash {
+		return false
+	}
+	return true
+}
+
+// Function for picking a longest chain if there are two competing blocks submitted
+func replaceChain(newBlocks []Block) {
+	if len(newBlocks) > len(Blockchain) {
+		Blockchain = newBlocks
+	}
+}
+
+// Function to define and start a web server
+func run() error {
+	mux := makeMuxRouter()
+	httpAddr := os.Getenv("PORT")
+	log.Println("Listening on ", httpAddr)
+	server := &http.Server{
+		Addr:           ":" + httpAddr,
+		Handler:        mux,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
+	if err := server.ListenAndServe(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Function to define HTTP server routes and actions
+func makeMuxRouter() http.Handler {
+	muxRouter := mux.NewRouter()
+	muxRouter.HandleFunc("/", handleGetBlockchain).Methods("GET")
+	muxRouter.HandleFunc("/", handleWriteBlock).Methods("POST")
+	return muxRouter
+}
+
+// Function to handle retreiving the root route
+func handleGetBlockchain(w http.ResponseWriter, r *http.Request) {
+	bytes, err := json.MarshalIndent(Blockchain, "", " ")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	io.WriteString(w, string(bytes))
 }
