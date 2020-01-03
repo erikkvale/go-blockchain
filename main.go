@@ -12,8 +12,8 @@ import (
 	"time"
 
 	// Third party Libraries
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
-	// "github.com/davecgh/go-spew/spew"
 	// "github.com/joho/godotenv"
 )
 
@@ -106,4 +106,45 @@ func handleGetBlockchain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	io.WriteString(w, string(bytes))
+}
+
+// Message struct for POST requests
+type Message struct {
+	BPM int
+}
+
+//Function to handle POST request to the root route
+func handleWriteBlock(w http.ResponseWriter, r *http.Request) {
+	var m Message
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&m); err != nil {
+		respondWithJSON(w, r, http.StatusBadRequest, r.Body)
+		return
+	}
+	defer r.Body.Close()
+
+	newBlock, err := generateBlock(Blockchain[len(Blockchain)-1], m.BPM)
+	if err != nil {
+		respondWithJSON(w, r, http.StatusInternalServerError, m)
+		return
+	}
+	if isBlockValid(Blockchain[len(Blockchain)-1], newBlock) {
+		newBlockchain := append(Blockchain, newBlock)
+		replaceChain(newBlockchain)
+		spew.Dump(Blockchain)
+	}
+	respondWithJSON(w, r, http.StatusCreated, newBlock)
+}
+
+// Function to report on the outcome of the POST request
+func respondWithJSON(w http.ResponseWriter, r *http.Request, code int, payload interface{}) {
+	response, err := json.MarshalIndent(payload, "", " ")
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("HTTP 500: Internal Server Error"))
+		return
+	}
+	w.WriteHeader(code)
+	w.Write(response)
 }
