@@ -14,7 +14,7 @@ import (
 	// Third party Libraries
 	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/mux"
-	// "github.com/joho/godotenv"
+	"github.com/joho/godotenv"
 )
 
 // Block type for a block on my blockchain
@@ -147,4 +147,20 @@ func respondWithJSON(w http.ResponseWriter, r *http.Request, code int, payload i
 	}
 	w.WriteHeader(code)
 	w.Write(response)
+}
+
+// The main event
+func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
+	go func() {
+		currentTime := time.Now()
+		// I chose a struct literal here, to make things explicit
+		genesisBlock := Block{Index: 0, Timestamp: currentTime.String(), BPM: 0, Hash: "", PrevHash: ""}
+		spew.Dump(genesisBlock)
+		Blockchain = append(Blockchain, genesisBlock)
+	}()
+	log.Fatal(run())
 }
