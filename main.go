@@ -180,7 +180,14 @@ func main() {
 	go func() {
 		currentTime := time.Now()
 		// I chose a struct literal here, to make things explicit
-		genesisBlock := Block{Index: 0, Timestamp: currentTime.String(), BPM: 0, Hash: "", PrevHash: ""}
+		genesisBlock := Block{
+			Index:     0,
+			Timestamp: currentTime.String(),
+			BPM:       0,
+			Hash:      "",
+			PrevHash:  "",
+		}
+		genesisBlock.Hash = calculateBlockHash(genesisBlock)
 		spew.Dump(genesisBlock)
 		Blockchain = append(Blockchain, genesisBlock)
 	}()
