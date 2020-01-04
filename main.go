@@ -17,6 +17,12 @@ import (
 	"github.com/joho/godotenv"
 )
 
+/*
+==============================================================================
+Blockchain and Block data structures
+==============================================================================
+*/
+
 // Block type for a block on my blockchain
 type Block struct {
 	Index     int
@@ -29,6 +35,11 @@ type Block struct {
 // Blockchain slice composed of Block types
 var Blockchain []Block
 
+/*
+==============================================================================
+Blockchain and Block Helper functions
+==============================================================================
+*/
 // Function for calculating the hash of a Block
 func calculateBlockHash(block Block) string {
 	record := string(block.Index) + block.Timestamp + string(block.BPM) + block.PrevHash
@@ -72,32 +83,11 @@ func replaceChain(newBlocks []Block) {
 	}
 }
 
-// Function to define and start a web server
-func run() error {
-	mux := makeMuxRouter()
-	httpAddr := os.Getenv("PORT")
-	log.Println("Listening on ", httpAddr)
-	server := &http.Server{
-		Addr:           ":" + httpAddr,
-		Handler:        mux,
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
-		MaxHeaderBytes: 1 << 20,
-	}
-	if err := server.ListenAndServe(); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Function to define HTTP server routes and actions
-func makeMuxRouter() http.Handler {
-	muxRouter := mux.NewRouter()
-	muxRouter.HandleFunc("/", handleGetBlockchain).Methods("GET")
-	muxRouter.HandleFunc("/", handleWriteBlock).Methods("POST")
-	return muxRouter
-}
-
+/*
+==============================================================================
+Request Handler functions and supporting data structures
+==============================================================================
+*/
 // Function to handle retreiving the root route
 func handleGetBlockchain(w http.ResponseWriter, r *http.Request) {
 	bytes, err := json.MarshalIndent(Blockchain, "", " ")
@@ -147,6 +137,38 @@ func respondWithJSON(w http.ResponseWriter, r *http.Request, code int, payload i
 	}
 	w.WriteHeader(code)
 	w.Write(response)
+}
+
+/*
+==============================================================================
+Orchestration and server functions
+==============================================================================
+*/
+
+// Function to define HTTP server routes and actions
+func makeMuxRouter() http.Handler {
+	muxRouter := mux.NewRouter()
+	muxRouter.HandleFunc("/", handleGetBlockchain).Methods("GET")
+	muxRouter.HandleFunc("/", handleWriteBlock).Methods("POST")
+	return muxRouter
+}
+
+// Function to define and start a web server
+func run() error {
+	mux := makeMuxRouter()
+	httpAddr := os.Getenv("PORT")
+	log.Println("Listening on ", httpAddr)
+	server := &http.Server{
+		Addr:           ":" + httpAddr,
+		Handler:        mux,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
+	if err := server.ListenAndServe(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // The main event
