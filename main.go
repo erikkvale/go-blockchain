@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"time"
@@ -145,6 +146,9 @@ Orchestration and server functions
 ==============================================================================
 */
 
+// blockchainServer handles incoming concurrent Blocks
+var blockchainServer chan []Block
+
 // Function to define HTTP server routes and actions
 func makeMuxRouter() http.Handler {
 	muxRouter := mux.NewRouter()
@@ -177,6 +181,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	blockchainServer = make(chan []Block)
+
+	// Genesis block
 	go func() {
 		currentTime := time.Now()
 		// I chose a struct literal here, to make things explicit
@@ -191,5 +199,21 @@ func main() {
 		spew.Dump(genesisBlock)
 		Blockchain = append(Blockchain, genesisBlock)
 	}()
+
+	// Start a TCP server
+	server, err := net.Listen("tcp", ":"+os.Getenv("PORT"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer server.Close()
+
+	for {
+		conn, err := server.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+		go handleConn(conn)
+	}
+
 	log.Fatal(run())
 }
