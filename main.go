@@ -149,6 +149,10 @@ Orchestration and server functions
 // blockchainServer handles incoming concurrent Blocks
 var blockchainServer chan []Block
 
+func handleConn(conn net.Conn) {
+	defer conn.Close()
+}
+
 // Function to define HTTP server routes and actions
 func makeMuxRouter() http.Handler {
 	muxRouter := mux.NewRouter()
@@ -214,6 +218,4 @@ func main() {
 		}
 		go handleConn(conn)
 	}
-
-	log.Fatal(run())
 }
